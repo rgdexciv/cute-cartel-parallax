@@ -71,6 +71,12 @@
     font-family:inherit;font-size:1rem;background:var(--blush);
   }
   .field input:focus{outline:none;box-shadow:var(--pop-sm);background:#fff}
+  #addForm input,#addForm select{
+    padding:10px 12px;border:var(--outline);border-radius:12px;
+    font-family:inherit;font-size:.9rem;background:var(--blush);
+  }
+  #addForm input:focus,#addForm select:focus{outline:none;box-shadow:var(--pop-sm);background:#fff}
+  .stock-input{width:70px;padding:6px 8px;border:var(--outline);border-radius:8px;font-family:inherit;font-size:.85rem;background:var(--blush)}
   .btn-primary{
     width:100%;padding:14px;margin-top:6px;
     background:var(--sakura-deep);color:#fff;font-family:'Mochiy Pop One';
@@ -290,9 +296,42 @@
     <!-- INVENTORY -->
     <section class="view" id="v-inventory">
       <div class="toolbar">
-        <button class="btn pink">＋ Add product</button>
-        <button class="btn">⬇ Import CSV</button>
-        <button class="btn">⬆ Export CSV</button>
+        <button class="btn pink" onclick="toggleAddForm()">＋ Add product</button>
+      </div>
+      <div class="panel" id="addForm" style="display:none;margin-bottom:16px">
+        <h2>New product</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-top:12px">
+          <input id="npName" placeholder="Name *">
+          <input id="npJp" placeholder="Japanese name">
+          <input id="npSku" placeholder="SKU *">
+          <input id="npVariant" placeholder="Variant">
+          <select id="npCategory">
+            <option value="plushies">Plushies 🧸</option>
+            <option value="stationery">Stationery ✏️</option>
+            <option value="snacks">Snacks 🍬</option>
+            <option value="sakura">Sakura 🌸</option>
+          </select>
+          <input id="npPrice" type="number" min="0" step="0.01" placeholder="Price ₱ *">
+          <input id="npStock" type="number" min="0" step="1" placeholder="Stock *">
+          <input id="npEmoji" placeholder="Emoji (🧸)" maxlength="4">
+          <select id="npBg">
+            <option value="sakura">Pink</option>
+            <option value="matcha">Green</option>
+            <option value="butter">Yellow</option>
+            <option value="sky">Blue</option>
+            <option value="lavender">Purple</option>
+          </select>
+          <select id="npBadge">
+            <option value="">No badge</option>
+            <option>NEW</option>
+            <option>BESTSELLER</option>
+            <option>LIMITED</option>
+          </select>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:10px;align-items:center">
+          <button class="btn pink" onclick="saveProduct()">Save product</button>
+          <span class="phint" id="addMsg"></span>
+        </div>
       </div>
       <div class="panel">
         <div class="panel-head"><h2>Products &amp; variants</h2><span class="pill pink" id="skuCount">0 SKUs</span></div>
@@ -491,6 +530,90 @@
     document.getElementById('viewSub').innerHTML=titles[view][1];
     document.getElementById('sidebar').classList.remove('open');
     window.scrollTo(0,0);
+    if(view === 'inventory') loadInventory();
+  }
+
+  /* ===== Inventory (Supabase-backed) ===== */
+  function esc(s){ var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
+  function peso(cents){ return '₱' + (cents / 100).toLocaleString('en-PH', { minimumFractionDigits: 0, maximumFractionDigits: 2 }); }
+
+  function toggleAddForm(){
+    var f = $('addForm');
+    f.style.display = f.style.display === 'none' ? 'block' : 'none';
+  }
+
+  function stockClass(n){ return n === 0 ? 'stock-out' : (n <= 5 ? 'stock-low' : 'stock-ok'); }
+
+  function loadInventory(){
+    sb.from('products').select('*').order('created_at', { ascending: false }).then(function(r){
+      if(r.error){ $('inventoryRows').innerHTML = '<tr><td colspan="5" class="phint">Error: ' + esc(r.error.message) + '</td></tr>'; return; }
+      var rows = r.data || [];
+      $('skuCount').textContent = rows.length + ' SKU' + (rows.length === 1 ? '' : 's');
+      if(!rows.length){
+        $('inventoryRows').innerHTML = '<tr><td colspan="5" class="phint">No products yet. Add your first product to get started.</td></tr>';
+        return;
+      }
+      $('inventoryRows').innerHTML = rows.map(function(p){
+        return '<tr>' +
+          '<td class="prod"><span class="thumb" style="background:var(--' + esc(p.bg) + ')">' + esc(p.emoji) + '</span>' + esc(p.name) + '</td>' +
+          '<td>' + esc(p.sku) + '</td>' +
+          '<td>' + esc(p.variant || '—') + '</td>' +
+          '<td>' + peso(p.price_cents) + '</td>' +
+          '<td><span class="' + stockClass(p.stock) + '">' + p.stock + '</span> ' +
+            '<input class="stock-input" type="number" min="0" step="1" value="' + p.stock + '" data-id="' + p.id + '"> ' +
+            '<button class="btn mini" onclick="updateStock(this)" data-id="' + p.id + '">Save</button> ' +
+            '<button class="btn mini" onclick="deleteProduct(this)" data-id="' + p.id + '" data-name="' + esc(p.name) + '">🗑</button></td>' +
+        '</tr>';
+      }).join('');
+    });
+  }
+
+  function saveProduct(){
+    var name = $('npName').value.trim();
+    var sku = $('npSku').value.trim();
+    var price = parseFloat($('npPrice').value);
+    var stock = parseInt($('npStock').value, 10);
+    if(!name || !sku || isNaN(price) || price < 0 || isNaN(stock) || stock < 0){
+      $('addMsg').textContent = 'Name, SKU, valid price and stock are required.'; return;
+    }
+    $('addMsg').textContent = 'Saving…';
+    sb.from('products').insert({
+      name: name,
+      name_jp: $('npJp').value.trim(),
+      sku: sku,
+      variant: $('npVariant').value.trim(),
+      category: $('npCategory').value,
+      price_cents: Math.round(price * 100),
+      stock: stock,
+      emoji: $('npEmoji').value.trim() || '🧸',
+      bg: $('npBg').value,
+      badge: $('npBadge').value
+    }).then(function(r){
+      if(r.error){ $('addMsg').textContent = r.error.message; return; }
+      $('addMsg').textContent = '';
+      ['npName','npJp','npSku','npVariant','npPrice','npStock','npEmoji'].forEach(function(id){ $(id).value = ''; });
+      $('addForm').style.display = 'none';
+      loadInventory();
+    });
+  }
+
+  function updateStock(btn){
+    var id = btn.dataset.id;
+    var input = document.querySelector('.stock-input[data-id="' + id + '"]');
+    var val = parseInt(input.value, 10);
+    if(isNaN(val) || val < 0){ alert('Stock must be 0 or more.'); return; }
+    sb.from('products').update({ stock: val }).eq('id', id).then(function(r){
+      if(r.error){ alert(r.error.message); return; }
+      loadInventory();
+    });
+  }
+
+  function deleteProduct(btn){
+    if(!confirm('Delete "' + btn.dataset.name + '"? This cannot be undone.')) return;
+    sb.from('products').delete().eq('id', btn.dataset.id).then(function(r){
+      if(r.error){ alert(r.error.message); return; }
+      loadInventory();
+    });
   }
 </script>
 </body>
