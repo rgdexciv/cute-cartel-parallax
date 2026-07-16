@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Cute Cartel — Admin HQ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Mochiy+Pop+One&family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sakura:#FFB7D5;
+    --sakura-deep:#FF6FA9;
+    --blush:#FFF0F6;
+    --butter:#FFE9A8;
+    --matcha:#BFE8C9;
+    --sky:#BFE0F5;
+    --lavender:#D9C7F2;
+    --ink:#472B3B;
+    --card:#FFFFFF;
+    --muted:#9A7E8C;
+    --good:#2FBF71;
+    --warn:#F5A623;
+    --bad:#FF5C7A;
+    --outline:3px solid var(--ink);
+    --pop:6px 6px 0 var(--ink);
+    --pop-sm:4px 4px 0 var(--ink);
+    --radius:20px;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:'Zen Maru Gothic',sans-serif;
+    background:
+      radial-gradient(circle at 12% 8%, #FFDCEC 0, transparent 40%),
+      radial-gradient(circle at 88% 0%, #E7DBFB 0, transparent 38%),
+      var(--blush);
+    color:var(--ink);
+    min-height:100vh;
+  }
+  h1,h2,h3,.brandfont{font-family:'Mochiy Pop One',sans-serif;font-weight:400}
+  button{font-family:inherit;cursor:pointer}
+  a{color:inherit}
+
+  /* ---------- LOGIN ---------- */
+  #login{
+    position:fixed;inset:0;z-index:50;
+    display:flex;align-items:center;justify-content:center;padding:20px;
+    background:
+      radial-gradient(circle at 20% 20%, #FFCFE4 0, transparent 45%),
+      radial-gradient(circle at 80% 80%, #CDE7FA 0, transparent 45%),
+      var(--blush);
+  }
+  .login-card{
+    width:100%;max-width:400px;background:var(--card);
+    border:var(--outline);border-radius:26px;box-shadow:var(--pop);
+    padding:34px 30px;text-align:center;
+  }
+  .logo-badge{
+    display:inline-flex;align-items:center;gap:8px;
+    background:var(--sakura);border:var(--outline);border-radius:999px;
+    padding:6px 16px;box-shadow:var(--pop-sm);margin-bottom:18px;
+    font-family:'Mochiy Pop One';font-size:.85rem;
+  }
+  .login-card h1{font-size:1.6rem;margin-bottom:4px}
+  .login-card p.sub{color:var(--muted);font-size:.9rem;margin-bottom:22px}
+  .field{text-align:left;margin-bottom:14px}
+  .field label{display:block;font-weight:700;font-size:.8rem;margin-bottom:6px}
+  .field input{
+    width:100%;padding:12px 14px;border:var(--outline);border-radius:14px;
+    font-family:inherit;font-size:1rem;background:var(--blush);
+  }
+  .field input:focus{outline:none;box-shadow:var(--pop-sm);background:#fff}
+  .btn-primary{
+    width:100%;padding:14px;margin-top:6px;
+    background:var(--sakura-deep);color:#fff;font-family:'Mochiy Pop One';
+    border:var(--outline);border-radius:16px;box-shadow:var(--pop);
+    font-size:1rem;transition:transform .08s, box-shadow .08s;
+  }
+  .btn-primary:active{transform:translate(4px,4px);box-shadow:2px 2px 0 var(--ink)}
+  .hint{margin-top:16px;font-size:.75rem;color:var(--muted)}
+  .hint code{background:var(--butter);padding:2px 6px;border-radius:6px;border:2px solid var(--ink)}
+
+  /* ---------- APP SHELL ---------- */
+  #app{display:none;min-height:100vh}
+  .shell{display:grid;grid-template-columns:250px 1fr;min-height:100vh}
+
+  .sidebar{
+    background:var(--ink);color:#fff;padding:22px 16px;
+    display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh;
+  }
+  .sidebar .brand{
+    font-family:'Mochiy Pop One';font-size:1.15rem;color:#fff;
+    display:flex;align-items:center;gap:8px;margin-bottom:20px;padding:0 6px;
+  }
+  .sidebar .brand .dot{width:14px;height:14px;border-radius:50%;background:var(--sakura);border:2px solid #fff}
+  .nav-item{
+    display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:14px;
+    color:#F6E7EF;font-weight:500;font-size:.95rem;transition:.12s;border:2px solid transparent;
+  }
+  .nav-item .ic{font-size:1.1rem;width:22px;text-align:center}
+  .nav-item:hover{background:#5c3a4d}
+  .nav-item.active{background:var(--sakura);color:var(--ink);border:2px solid #fff;font-weight:700}
+  .sidebar .spacer{flex:1}
+  .userchip{
+    display:flex;align-items:center;gap:10px;padding:10px;border-radius:14px;
+    background:#5c3a4d;font-size:.85rem;
+  }
+  .userchip .av{width:34px;height:34px;border-radius:50%;background:var(--butter);border:2px solid #fff;display:flex;align-items:center;justify-content:center;font-family:'Mochiy Pop One';color:var(--ink)}
+  .logout{margin-top:8px;width:100%;background:transparent;color:#F6E7EF;border:2px solid #7a5266;border-radius:12px;padding:9px;font-size:.85rem}
+  .logout:hover{background:#5c3a4d}
+
+  .main{padding:26px 30px 60px;overflow-x:hidden}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+  .topbar h1{font-size:1.5rem}
+  .topbar .sub{color:var(--muted);font-size:.9rem;margin-top:2px}
+  .search{
+    display:flex;align-items:center;gap:8px;background:#fff;border:var(--outline);
+    border-radius:14px;padding:9px 14px;box-shadow:var(--pop-sm);min-width:220px;
+  }
+  .search input{border:none;outline:none;font-family:inherit;font-size:.9rem;background:transparent;width:100%}
+
+  .menu-toggle{display:none}
+
+  /* stat cards */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+  .stat{
+    background:var(--card);border:var(--outline);border-radius:var(--radius);
+    box-shadow:var(--pop);padding:18px;position:relative;overflow:hidden;
+  }
+  .stat .ic{
+    width:44px;height:44px;border-radius:12px;border:var(--outline);
+    display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin-bottom:12px;
+  }
+  .stat.p1 .ic{background:var(--matcha)}
+  .stat.p2 .ic{background:var(--sky)}
+  .stat.p3 .ic{background:var(--butter)}
+  .stat.p4 .ic{background:var(--lavender)}
+  .stat .label{font-size:.8rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+  .stat .value{font-family:'Mochiy Pop One';font-size:1.7rem;margin:2px 0}
+  .stat .delta{font-size:.78rem;font-weight:700}
+  .delta.up{color:var(--good)} .delta.down{color:var(--bad)}
+
+  .grid2{display:grid;grid-template-columns:1.6fr 1fr;gap:16px;margin-bottom:16px}
+  .panel{
+    background:var(--card);border:var(--outline);border-radius:var(--radius);
+    box-shadow:var(--pop);padding:20px;
+  }
+  .panel h2{font-size:1.1rem;margin-bottom:2px}
+  .panel .phint{color:var(--muted);font-size:.82rem;margin-bottom:16px}
+  .panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .pill{font-size:.72rem;font-weight:700;padding:4px 10px;border-radius:999px;border:2px solid var(--ink)}
+  .pill.green{background:var(--matcha)} .pill.pink{background:var(--sakura)}
+
+  /* chart */
+  .chart{display:flex;align-items:flex-end;gap:10px;height:180px;padding-top:10px}
+  .bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end}
+  .bar .fill{width:100%;background:var(--sakura);border:2px solid var(--ink);border-radius:8px 8px 0 0;box-shadow:2px 2px 0 var(--ink);transition:height .6s cubic-bezier(.2,.8,.2,1)}
+  .bar:nth-child(even) .fill{background:var(--sky)}
+  .bar .lbl{font-size:.72rem;color:var(--muted);font-weight:700}
+
+  /* lists / tables */
+  table{width:100%;border-collapse:collapse}
+  th{text-align:left;font-size:.72rem;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);padding:8px 8px;border-bottom:2px dashed #EAD5E0}
+  td{padding:11px 8px;border-bottom:1px solid #F3E4EC;font-size:.9rem;vertical-align:middle}
+  tr:last-child td{border-bottom:none}
+  .prod{display:flex;align-items:center;gap:10px}
+  .thumb{width:36px;height:36px;border-radius:10px;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:1.1rem}
+  .badge{font-size:.72rem;font-weight:700;padding:4px 10px;border-radius:999px;border:2px solid var(--ink);white-space:nowrap}
+  .b-paid{background:var(--matcha)} .b-pending{background:var(--butter)} .b-shipped{background:var(--sky)} .b-cancel{background:#FFD3DC}
+  .stock-ok{color:var(--good);font-weight:700} .stock-low{color:var(--warn);font-weight:700} .stock-out{color:var(--bad);font-weight:700}
+  .stockbar{height:7px;border-radius:6px;background:#F0DDE7;border:1px solid var(--ink);overflow:hidden;margin-top:5px;max-width:120px}
+  .stockbar > i{display:block;height:100%;background:var(--sakura-deep)}
+
+  /* views */
+  .view{display:none}
+  .view.active{display:block;animation:pop .25s ease}
+  @keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+  .btn{background:#fff;border:var(--outline);border-radius:12px;padding:10px 16px;font-weight:700;font-size:.85rem;box-shadow:var(--pop-sm);transition:transform .08s}
+  .btn:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--ink)}
+  .btn.pink{background:var(--sakura-deep);color:#fff}
+  .btn.mini{padding:6px 12px;font-size:.78rem;box-shadow:2px 2px 0 var(--ink)}
+
+  .demo-flag{
+    position:fixed;bottom:14px;right:14px;z-index:20;
+    background:var(--butter);border:var(--outline);border-radius:999px;
+    padding:8px 16px;font-size:.78rem;font-weight:700;box-shadow:var(--pop-sm);
+  }
+
+  @media(max-width:900px){
+    .stats{grid-template-columns:repeat(2,1fr)}
+    .grid2{grid-template-columns:1fr}
+  }
+  @media(max-width:720px){
+    .shell{grid-template-columns:1fr}
+    .sidebar{position:fixed;left:0;top:0;z-index:40;transform:translateX(-100%);transition:transform .25s;width:250px}
+    .sidebar.open{transform:none}
+    .menu-toggle{display:flex;align-items:center;gap:8px;background:var(--ink);color:#fff;border:none;border-radius:12px;padding:9px 14px;font-weight:700}
+    .main{padding:18px}
+  }
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<div id="login">
+  <div class="login-card">
+    <span class="logo-badge">🍬 CUTE CARTEL</span>
+    <h1>Admin HQ</h1>
+    <p class="sub">Contraband levels of cute — staff only.</p>
+    <form onsubmit="enterApp(event)">
+      <div class="field">
+        <label>Email</label>
+        <input type="email" id="email" value="owner@cutecartel.ph" required>
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" id="pass" value="••••••••" required>
+      </div>
+      <button class="btn-primary" type="submit">Enter HQ →</button>
+    </form>
+    <p class="hint">Demo preview — press <code>Enter HQ</code> to explore. No real login.</p>
+  </div>
+</div>
+
+<!-- ================= APP ================= -->
+<div id="app">
+<div class="shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="brand"><span class="dot"></span> Cute Cartel</div>
+    <a class="nav-item active" data-view="dashboard" onclick="go('dashboard',this)"><span class="ic">📊</span> Dashboard</a>
+    <a class="nav-item" data-view="inventory" onclick="go('inventory',this)"><span class="ic">📦</span> Inventory</a>
+    <a class="nav-item" data-view="orders" onclick="go('orders',this)"><span class="ic">🧾</span> Orders</a>
+    <a class="nav-item" data-view="sales" onclick="go('sales',this)"><span class="ic">💰</span> Sales</a>
+    <a class="nav-item" data-view="users" onclick="go('users',this)"><span class="ic">👥</span> Users</a>
+    <div class="spacer"></div>
+    <div class="userchip"><span class="av">M</span><div><strong>Mika</strong><br><span style="opacity:.7">Owner</span></div></div>
+    <button class="logout" onclick="logout()">↩ Log out</button>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    <div class="topbar">
+      <div style="display:flex;align-items:center;gap:12px">
+        <button class="menu-toggle" onclick="document.getElementById('sidebar').classList.toggle('open')">☰ Menu</button>
+        <div>
+          <h1 id="viewTitle">Dashboard</h1>
+          <div class="sub" id="viewSub">Tuesday, July 14 · Good afternoon, Mika 🌸</div>
+        </div>
+      </div>
+      <div class="search"><span>🔎</span><input placeholder="Search products, orders, customers…"></div>
+    </div>
+
+    <!-- DASHBOARD -->
+    <section class="view active" id="v-dashboard">
+      <div class="stats">
+        <div class="stat p1"><div class="ic">💰</div><div class="label">Revenue (30d)</div><div class="value">₱182,450</div><div class="delta up">▲ 12.4% vs last month</div></div>
+        <div class="stat p2"><div class="ic">🧾</div><div class="label">Orders (30d)</div><div class="value">327</div><div class="delta up">▲ 8.1%</div></div>
+        <div class="stat p3"><div class="ic">⚠️</div><div class="label">Low stock</div><div class="value">6</div><div class="delta down">needs restock</div></div>
+        <div class="stat p4"><div class="ic">👥</div><div class="label">Customers</div><div class="value">1,204</div><div class="delta up">▲ 47 new</div></div>
+      </div>
+
+      <div class="grid2">
+        <div class="panel">
+          <div class="panel-head"><div><h2>Sales this week</h2></div><span class="pill green">₱48,900</span></div>
+          <div class="chart" id="chart">
+            <div class="bar"><div class="fill" style="height:45%"></div><span class="lbl">Mon</span></div>
+            <div class="bar"><div class="fill" style="height:62%"></div><span class="lbl">Tue</span></div>
+            <div class="bar"><div class="fill" style="height:38%"></div><span class="lbl">Wed</span></div>
+            <div class="bar"><div class="fill" style="height:74%"></div><span class="lbl">Thu</span></div>
+            <div class="bar"><div class="fill" style="height:90%"></div><span class="lbl">Fri</span></div>
+            <div class="bar"><div class="fill" style="height:68%"></div><span class="lbl">Sat</span></div>
+            <div class="bar"><div class="fill" style="height:82%"></div><span class="lbl">Sun</span></div>
+          </div>
+        </div>
+        <div class="panel">
+          <h2>Low stock alerts</h2>
+          <p class="phint">Restock soon 🚨</p>
+          <table>
+            <tr><td class="prod"><span class="thumb" style="background:var(--sakura)">🧸</span>Sakura Plushie · S</td><td class="stock-out">0 left</td></tr>
+            <tr><td class="prod"><span class="thumb" style="background:var(--butter)">🧦</span>Mochi Socks · M</td><td class="stock-low">3 left</td></tr>
+            <tr><td class="prod"><span class="thumb" style="background:var(--sky)">🎀</span>Bow Clip · Blue</td><td class="stock-low">4 left</td></tr>
+            <tr><td class="prod"><span class="thumb" style="background:var(--lavender)">👜</span>Cloud Tote · L</td><td class="stock-low">5 left</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><div><h2>Recent orders</h2></div><button class="btn mini" onclick="go('orders',document.querySelector('[data-view=orders]'))">View all →</button></div>
+        <table>
+          <thead><tr><th>Order</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><strong>#CC-1042</strong></td><td>Andrea R.</td><td>2</td><td>₱1,240</td><td><span class="badge b-paid">Paid</span></td></tr>
+            <tr><td><strong>#CC-1041</strong></td><td>Josh delaCruz</td><td>1</td><td>₱680</td><td><span class="badge b-shipped">Shipped</span></td></tr>
+            <tr><td><strong>#CC-1040</strong></td><td>Bea Santos</td><td>4</td><td>₱2,910</td><td><span class="badge b-pending">Pending</span></td></tr>
+            <tr><td><strong>#CC-1039</strong></td><td>Kim P.</td><td>1</td><td>₱520</td><td><span class="badge b-cancel">Cancelled</span></td></tr>
+            <tr><td><strong>#CC-1038</strong></td><td>Marco Lim</td><td>3</td><td>₱1,875</td><td><span class="badge b-paid">Paid</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- INVENTORY -->
+    <section class="view" id="v-inventory">
+      <div class="toolbar">
+        <button class="btn pink">＋ Add product</button>
+        <button class="btn">⬇ Import CSV</button>
+        <button class="btn">⬆ Export CSV</button>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2>Products &amp; variants</h2><span class="pill pink">48 SKUs</span></div>
+        <table>
+          <thead><tr><th>Product</th><th>SKU</th><th>Variant</th><th>Price</th><th>Stock</th></tr></thead>
+          <tbody>
+            <tr><td class="prod"><span class="thumb" style="background:var(--sakura)">🧸</span>Sakura Plushie</td><td>CC-PLU-S</td><td>Small</td><td>₱690</td><td><span class="stock-out">Out</span><div class="stockbar"><i style="width:0%"></i></div></td></tr>
+            <tr><td class="prod"><span class="thumb" style="background:var(--sakura)">🧸</span>Sakura Plushie</td><td>CC-PLU-L</td><td>Large</td><td>₱990</td><td><span class="stock-ok">22</span><div class="stockbar"><i style="width:80%"></i></div></td></tr>
+            <tr><td class="prod"><span class="thumb" style="background:var(--butter)">🧦</span>Mochi Socks</td><td>CC-SOC-M</td><td>Medium · Cream</td><td>₱280</td><td><span class="stock-low">3</span><div class="stockbar"><i style="width:12%"></i></div></td></tr>
+            <tr><td class="prod"><span class="thumb" style="background:var(--sky)">🎀</span>Bow Clip</td><td>CC-BOW-BLU</td><td>Blue</td><td>₱180</td><td><span class="stock-low">4</span><div class="stockbar"><i style="width:16%"></i></div></td></tr>
+            <tr><td class="prod"><span class="thumb" style="background:var(--matcha)">🍵</span>Matcha Mug</td><td>CC-MUG-01</td><td>One size</td><td>₱450</td><td><span class="stock-ok">61</span><div class="stockbar"><i style="width:95%"></i></div></td></tr>
+            <tr><td class="prod"><span class="thumb" style="background:var(--lavender)">👜</span>Cloud Tote</td><td>CC-TOT-L</td><td>Large · Lilac</td><td>₱620</td><td><span class="stock-low">5</span><div class="stockbar"><i style="width:20%"></i></div></td></tr>
+            <tr><td class="prod"><span class="thumb" style="background:var(--butter)">🧷</span>Sticker Pack</td><td>CC-STK-05</td><td>Set of 5</td><td>₱150</td><td><span class="stock-ok">140</span><div class="stockbar"><i style="width:100%"></i></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ORDERS -->
+    <section class="view" id="v-orders">
+      <div class="toolbar">
+        <button class="btn pink">All</button>
+        <button class="btn">Pending</button>
+        <button class="btn">Paid</button>
+        <button class="btn">Shipped</button>
+        <button class="btn">⬆ Export CSV</button>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2>Orders</h2><span class="pill green">327 this month</span></div>
+        <table>
+          <thead><tr><th>Order</th><th>Customer</th><th>Date</th><th>Items</th><th>Total</th><th>Payment</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td><strong>#CC-1042</strong></td><td>Andrea R.</td><td>Jul 14</td><td>2</td><td>₱1,240</td><td>GCash</td><td><span class="badge b-paid">Paid</span></td></tr>
+            <tr><td><strong>#CC-1041</strong></td><td>Josh delaCruz</td><td>Jul 14</td><td>1</td><td>₱680</td><td>Card</td><td><span class="badge b-shipped">Shipped</span></td></tr>
+            <tr><td><strong>#CC-1040</strong></td><td>Bea Santos</td><td>Jul 13</td><td>4</td><td>₱2,910</td><td>Maya</td><td><span class="badge b-pending">Pending</span></td></tr>
+            <tr><td><strong>#CC-1039</strong></td><td>Kim P.</td><td>Jul 13</td><td>1</td><td>₱520</td><td>—</td><td><span class="badge b-cancel">Cancelled</span></td></tr>
+            <tr><td><strong>#CC-1038</strong></td><td>Marco Lim</td><td>Jul 12</td><td>3</td><td>₱1,875</td><td>GrabPay</td><td><span class="badge b-paid">Paid</span></td></tr>
+            <tr><td><strong>#CC-1037</strong></td><td>Trina G.</td><td>Jul 12</td><td>2</td><td>₱1,100</td><td>GCash</td><td><span class="badge b-shipped">Shipped</span></td></tr>
+            <tr><td><strong>#CC-1036</strong></td><td>Paolo M.</td><td>Jul 11</td><td>5</td><td>₱3,450</td><td>Card</td><td><span class="badge b-paid">Paid</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SALES -->
+    <section class="view" id="v-sales">
+      <div class="stats">
+        <div class="stat p1"><div class="ic">💰</div><div class="label">Gross sales</div><div class="value">₱182,450</div><div class="delta up">▲ 12.4%</div></div>
+        <div class="stat p2"><div class="ic">📈</div><div class="label">Avg order value</div><div class="value">₱558</div><div class="delta up">▲ 3.9%</div></div>
+        <div class="stat p3"><div class="ic">🎟️</div><div class="label">Discounts used</div><div class="value">₱9,120</div><div class="delta down">CUTE10, SUMMER</div></div>
+        <div class="stat p4"><div class="ic">↩️</div><div class="label">Refunds</div><div class="value">₱1,240</div><div class="delta up">0.7% rate</div></div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2>Revenue — last 12 weeks</h2><span class="pill pink">PayMongo</span></div>
+        <div class="chart">
+          <div class="bar"><div class="fill" style="height:40%"></div><span class="lbl">W1</span></div>
+          <div class="bar"><div class="fill" style="height:52%"></div><span class="lbl">W2</span></div>
+          <div class="bar"><div class="fill" style="height:48%"></div><span class="lbl">W3</span></div>
+          <div class="bar"><div class="fill" style="height:60%"></div><span class="lbl">W4</span></div>
+          <div class="bar"><div class="fill" style="height:55%"></div><span class="lbl">W5</span></div>
+          <div class="bar"><div class="fill" style="height:70%"></div><span class="lbl">W6</span></div>
+          <div class="bar"><div class="fill" style="height:66%"></div><span class="lbl">W7</span></div>
+          <div class="bar"><div class="fill" style="height:78%"></div><span class="lbl">W8</span></div>
+          <div class="bar"><div class="fill" style="height:72%"></div><span class="lbl">W9</span></div>
+          <div class="bar"><div class="fill" style="height:88%"></div><span class="lbl">W10</span></div>
+          <div class="bar"><div class="fill" style="height:83%"></div><span class="lbl">W11</span></div>
+          <div class="bar"><div class="fill" style="height:96%"></div><span class="lbl">W12</span></div>
+        </div>
+      </div>
+      <div class="grid2" style="margin-top:16px">
+        <div class="panel">
+          <h2>Top sellers</h2><p class="phint">By units sold</p>
+          <table>
+            <tr><td class="prod"><span class="thumb" style="background:var(--butter)">🧷</span>Sticker Pack</td><td><strong>412</strong> sold</td></tr>
+            <tr><td class="prod"><span class="thumb" style="background:var(--sakura)">🧸</span>Sakura Plushie</td><td><strong>288</strong> sold</td></tr>
+            <tr><td class="prod"><span class="thumb" style="background:var(--matcha)">🍵</span>Matcha Mug</td><td><strong>176</strong> sold</td></tr>
+          </table>
+        </div>
+        <div class="panel">
+          <h2>Payment mix</h2><p class="phint">This month</p>
+          <table>
+            <tr><td>GCash</td><td><strong>44%</strong></td></tr>
+            <tr><td>Card</td><td><strong>28%</strong></td></tr>
+            <tr><td>Maya</td><td><strong>16%</strong></td></tr>
+            <tr><td>GrabPay</td><td><strong>12%</strong></td></tr>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- USERS -->
+    <section class="view" id="v-users">
+      <div class="toolbar">
+        <button class="btn pink">＋ Invite staff</button>
+        <button class="btn">Customers</button>
+        <button class="btn">Staff</button>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><h2>Staff</h2><span class="pill green">3 members</span></div>
+        <table>
+          <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Last active</th></tr></thead>
+          <tbody>
+            <tr><td class="prod"><span class="thumb" style="background:var(--butter)">M</span>Mika (you)</td><td>owner@cutecartel.ph</td><td><span class="badge b-paid">Owner</span></td><td>Now</td></tr>
+            <tr><td class="prod"><span class="thumb" style="background:var(--sky)">J</span>Jenn A.</td><td>jenn@cutecartel.ph</td><td><span class="badge b-shipped">Staff</span></td><td>2h ago</td></tr>
+            <tr><td class="prod"><span class="thumb" style="background:var(--matcha)">R</span>Reg B.</td><td>reg@cutecartel.ph</td><td><span class="badge b-shipped">Staff</span></td><td>Yesterday</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="panel" style="margin-top:16px">
+        <div class="panel-head"><h2>Customers</h2><span class="pill pink">1,204 total</span></div>
+        <table>
+          <thead><tr><th>Name</th><th>Email</th><th>Orders</th><th>Spent</th><th>Joined</th></tr></thead>
+          <tbody>
+            <tr><td class="prod"><span class="thumb" style="background:var(--sakura)">A</span>Andrea R.</td><td>andrea@gmail.com</td><td>12</td><td>₱14,200</td><td>Jan 2026</td></tr>
+            <tr><td class="prod"><span class="thumb" style="background:var(--lavender)">B</span>Bea Santos</td><td>bea.s@gmail.com</td><td>9</td><td>₱9,880</td><td>Feb 2026</td></tr>
+            <tr><td class="prod"><span class="thumb" style="background:var(--sky)">M</span>Marco Lim</td><td>marco@yahoo.com</td><td>7</td><td>₱8,150</td><td>Mar 2026</td></tr>
+            <tr><td class="prod"><span class="thumb" style="background:var(--butter)">T</span>Trina G.</td><td>trina.g@gmail.com</td><td>5</td><td>₱5,400</td><td>Apr 2026</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+</div>
+</div>
+
+<div class="demo-flag">🎨 Demo preview · mock data</div>
+
+<script>
+  function enterApp(e){
+    e.preventDefault();
+    document.getElementById('login').style.display='none';
+    document.getElementById('app').style.display='block';
+  }
+  function logout(){
+    document.getElementById('app').style.display='none';
+    document.getElementById('login').style.display='flex';
+  }
+  const titles={
+    dashboard:['Dashboard','Tuesday, July 14 · Good afternoon, Mika 🌸'],
+    inventory:['Inventory','Manage products, variants &amp; stock'],
+    orders:['Orders','Track and fulfil customer orders'],
+    sales:['Sales','Revenue, discounts &amp; payment insights'],
+    users:['Users','Staff roles &amp; customer accounts']
+  };
+  function go(view,el){
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+    if(el) el.classList.add('active');
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    document.getElementById('v-'+view).classList.add('active');
+    document.getElementById('viewTitle').innerHTML=titles[view][0];
+    document.getElementById('viewSub').innerHTML=titles[view][1];
+    document.getElementById('sidebar').classList.remove('open');
+    window.scrollTo(0,0);
+  }
+</script>
+</body>
+</html>
