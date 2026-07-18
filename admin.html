@@ -548,6 +548,8 @@
 
   function stockClass(n){ return n === 0 ? 'stock-out' : (n <= 5 ? 'stock-low' : 'stock-ok'); }
 
+  var editingId = null;
+
   function loadInventory(){
     sb.from('products').select('*').order('created_at', { ascending: false }).then(function(r){
       if(r.error){ $('inventoryRows').innerHTML = '<tr><td colspan="5" class="phint">Error: ' + esc(r.error.message) + '</td></tr>'; return; }
@@ -558,6 +560,17 @@
         return;
       }
       $('inventoryRows').innerHTML = rows.map(function(p){
+        if(String(p.id) === editingId){
+          return '<tr>' +
+            '<td class="prod"><span class="thumb" style="background:var(--' + esc(p.bg) + ')">' + esc(p.emoji) + '</span>' +
+              '<input class="stock-input" type="text" value="' + esc(p.name) + '" data-edit-name="' + p.id + '"></td>' +
+            '<td>' + esc(p.sku) + '</td>' +
+            '<td>' + esc(p.variant || '—') + '</td>' +
+            '<td><input class="stock-input" type="number" min="0" step="0.01" value="' + (p.price_cents / 100) + '" data-edit-price="' + p.id + '"></td>' +
+            '<td><button class="btn mini" onclick="saveEdit(this)" data-id="' + p.id + '">Save</button> ' +
+              '<button class="btn mini" onclick="cancelEdit()">Cancel</button></td>' +
+          '</tr>';
+        }
         return '<tr>' +
           '<td class="prod"><span class="thumb" style="background:var(--' + esc(p.bg) + ')">' + esc(p.emoji) + '</span>' + esc(p.name) + '</td>' +
           '<td>' + esc(p.sku) + '</td>' +
@@ -566,6 +579,7 @@
           '<td><span class="' + stockClass(p.stock) + '">' + p.stock + '</span> ' +
             '<input class="stock-input" type="number" min="0" step="1" value="' + p.stock + '" data-id="' + p.id + '"> ' +
             '<button class="btn mini" onclick="updateStock(this)" data-id="' + p.id + '">Save</button> ' +
+            '<button class="btn mini" onclick="startEdit(this)" data-id="' + p.id + '">✏️</button> ' +
             '<button class="btn mini" onclick="deleteProduct(this)" data-id="' + p.id + '" data-name="' + esc(p.name) + '">🗑</button></td>' +
         '</tr>';
       }).join('');
@@ -608,6 +622,23 @@
     if(isNaN(val) || val < 0){ alert('Stock must be 0 or more.'); return; }
     sb.from('products').update({ stock: val }).eq('id', id).then(function(r){
       if(r.error){ alert(r.error.message); return; }
+      loadInventory();
+    });
+  }
+
+  function startEdit(btn){ editingId = btn.dataset.id; loadInventory(); }
+
+  function cancelEdit(){ editingId = null; loadInventory(); }
+
+  function saveEdit(btn){
+    var id = btn.dataset.id;
+    var name = document.querySelector('[data-edit-name="' + id + '"]').value.trim();
+    var price = parseFloat(document.querySelector('[data-edit-price="' + id + '"]').value);
+    if(!name){ alert('Name is required.'); return; }
+    if(isNaN(price) || price < 0){ alert('Price must be 0 or more.'); return; }
+    sb.from('products').update({ name: name, price_cents: Math.round(price * 100) }).eq('id', id).then(function(r){
+      if(r.error){ alert(r.error.message); return; }
+      editingId = null;
       loadInventory();
     });
   }
