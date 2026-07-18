@@ -303,9 +303,9 @@
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-top:12px">
           <input id="npName" placeholder="Name *">
           <input id="npJp" placeholder="Japanese name">
-          <input id="npSku" placeholder="SKU *">
+          <input id="npSku" placeholder="SKU (auto)" oninput="skuTouched = this.value.trim() !== ''">
           <input id="npVariant" placeholder="Variant">
-          <select id="npCategory">
+          <select id="npCategory" onchange="refreshSkuSuggestion()">
             <option value="plushies">Plushies 🧸</option>
             <option value="stationery">Stationery ✏️</option>
             <option value="snacks">Snacks 🍬</option>
@@ -543,7 +543,9 @@
 
   function toggleAddForm(){
     var f = $('addForm');
-    f.style.display = f.style.display === 'none' ? 'block' : 'none';
+    var opening = f.style.display === 'none';
+    f.style.display = opening ? 'block' : 'none';
+    if(opening){ refreshSkuSuggestion(); }
   }
 
   function stockClass(n){ return n === 0 ? 'stock-out' : (n <= 5 ? 'stock-low' : 'stock-ok'); }
@@ -586,14 +588,53 @@
     });
   }
 
+  var SKU_PREFIX = {
+    plushies: 'PLU', stationery: 'STA', snacks: 'SNK', sakura: 'SAK',
+    keychains: 'KEY', home: 'HOM', accessories: 'ACC', stickers: 'STK'
+  };
+
+  // True once the user types their own SKU; suppresses auto-fill until they clear it.
+  var skuTouched = false;
+
+  // Finds the next free PREFIX-NNN for a category. The sku column is UNIQUE, so
+  // this is a convenience — the database is what actually guarantees no duplicates.
+  function nextSku(category, cb){
+    var prefix = SKU_PREFIX[category] || 'CC';
+    sb.from('products').select('sku').like('sku', prefix + '-%').then(function(r){
+      if(r.error){ cb(null); return; }
+      var max = 0;
+      (r.data || []).forEach(function(row){
+        var m = /^[A-Z]+-(\d+)$/.exec(row.sku || '');
+        if(m){ max = Math.max(max, parseInt(m[1], 10)); }
+      });
+      cb(prefix + '-' + String(max + 1).padStart(3, '0'));
+    });
+  }
+
+  function refreshSkuSuggestion(){
+    if(skuTouched) return;
+    nextSku($('npCategory').value, function(sku){
+      if(sku && !skuTouched){ $('npSku').value = sku; }
+    });
+  }
+
   function saveProduct(){
     var name = $('npName').value.trim();
-    var sku = $('npSku').value.trim();
     var price = parseFloat($('npPrice').value);
     var stock = parseInt($('npStock').value, 10);
-    if(!name || !sku || isNaN(price) || price < 0 || isNaN(stock) || stock < 0){
-      $('addMsg').textContent = 'Name, SKU, valid price and stock are required.'; return;
+    if(!name || isNaN(price) || price < 0 || isNaN(stock) || stock < 0){
+      $('addMsg').textContent = 'Name, valid price and stock are required.'; return;
     }
+    var typed = $('npSku').value.trim();
+    if(typed && skuTouched){ insertProduct(typed, name, price, stock); return; }
+    $('addMsg').textContent = 'Generating SKU…';
+    nextSku($('npCategory').value, function(sku){
+      if(!sku){ $('addMsg').textContent = 'Could not generate a SKU. Enter one manually.'; return; }
+      insertProduct(sku, name, price, stock);
+    });
+  }
+
+  function insertProduct(sku, name, price, stock, retried){
     $('addMsg').textContent = 'Saving…';
     sb.from('products').insert({
       name: name,
@@ -607,9 +648,22 @@
       bg: $('npBg').value,
       badge: $('npBadge').value
     }).then(function(r){
-      if(r.error){ $('addMsg').textContent = r.error.message; return; }
+      if(r.error){
+        // 23505 = unique violation on sku. Something claimed it between our
+        // lookup and this insert; recompute once before giving up.
+        if(r.error.code === '23505' && !retried){
+          nextSku($('npCategory').value, function(fresh){
+            if(!fresh){ $('addMsg').textContent = 'That SKU is already taken.'; return; }
+            insertProduct(fresh, name, price, stock, true);
+          });
+          return;
+        }
+        $('addMsg').textContent = r.error.message;
+        return;
+      }
       $('addMsg').textContent = '';
       ['npName','npJp','npSku','npVariant','npPrice','npStock','npEmoji'].forEach(function(id){ $(id).value = ''; });
+      skuTouched = false;
       $('addForm').style.display = 'none';
       loadInventory();
     });
