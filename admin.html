@@ -528,9 +528,9 @@
   function beginMfaStep(){
     sb.auth.mfa.listFactors().then(function(r){
       if(r.error){ msg(r.error.message); return; }
-      var totp = (r.data && r.data.totp) || [];
-      var verified = totp.filter(function(f){ return f.status === 'verified'; });
-      if(!verified.length){ beginEnrollStep(totp); return; }
+      var all = (r.data && r.data.all) || [];
+      var verified = all.filter(function(f){ return f.status === 'verified'; });
+      if(!verified.length){ beginEnrollStep(all); return; }
       $('stepPass').style.display = 'none';
       $('stepCode').style.display = '';
       pendingFactorId = verified[0].id;
@@ -545,7 +545,9 @@
     var stale = (existing || []).filter(function(f){ return f.status !== 'verified'; });
     var cleanup = stale.map(function(f){ return sb.auth.mfa.unenroll({ factorId: f.id }); });
     Promise.all(cleanup).then(function(){
-      return sb.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'Admin HQ' });
+      // No friendlyName: Supabase rejects duplicates, and a leftover factor
+      // would then block enrolment permanently.
+      return sb.auth.mfa.enroll({ factorType: 'totp' });
     }).then(function(e){
       if(e.error){ msg(e.error.message); return; }
       pendingFactorId = e.data.id;
