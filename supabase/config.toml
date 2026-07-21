@@ -1,0 +1,12 @@
+project_id = "cute-cartel"
+
+# The browser calls this one with its Supabase session, and the function checks
+# the order belongs to that user.
+[functions.create-checkout]
+verify_jwt = true
+
+# PayMongo has no Supabase session to present. Gateway JWT checking must be off
+# or every delivery is rejected before the handler runs; the HMAC signature check
+# inside the function is what authenticates these requests instead.
+[functions.paymongo-webhook]
+verify_jwt = false
