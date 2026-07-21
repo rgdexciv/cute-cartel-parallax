@@ -23,14 +23,24 @@ const PAYMENT_METHODS = ['card', 'gcash', 'paymaya', 'grab_pay'];
 // of ours, and fall back to SITE_URL so an unknown origin is still refused.
 const PREVIEW_ORIGIN = /^https:\/\/cute-cartel-[a-z0-9-]+\.vercel\.app$/;
 
-function corsHeaders(origin: string | null): Record<string, string> {
+// supabase-js does not send only the headers this function reads: invoke() also
+// attaches apikey and x-client-info. Listing just authorization and
+// content-type meant the preflight refused those extras, so the browser dropped
+// the POST before sending it — on every origin, canonical one included. Echo
+// whatever the client asks for; the request is still authorised on its own
+// merits below, and CORS is not what keeps a caller out.
+const DEFAULT_ALLOWED_HEADERS = 'authorization, content-type, apikey, x-client-info';
+
+function corsHeaders(req: Request): Record<string, string> {
+  const origin = req.headers.get('Origin');
   const isOurs = origin === SITE_URL || (!!origin && PREVIEW_ORIGIN.test(origin));
   return {
     'Access-Control-Allow-Origin': isOurs ? (origin as string) : SITE_URL,
-    'Access-Control-Allow-Headers': 'authorization, content-type',
+    'Access-Control-Allow-Headers':
+      req.headers.get('Access-Control-Request-Headers') ?? DEFAULT_ALLOWED_HEADERS,
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    // The response body varies by caller, so caches must key on Origin.
-    Vary: 'Origin',
+    // Both headers above vary by caller, so caches must key on them.
+    Vary: 'Origin, Access-Control-Request-Headers',
   };
 }
 
@@ -42,7 +52,7 @@ function logProviderError(stage: string, detail: unknown): void {
 }
 
 Deno.serve(async (req: Request): Promise<Response> => {
-  const CORS_HEADERS = corsHeaders(req.headers.get('Origin'));
+  const CORS_HEADERS = corsHeaders(req);
 
   function json(body: unknown, status = 200): Response {
     return new Response(JSON.stringify(body), {
